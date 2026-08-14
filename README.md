@@ -279,3 +279,100 @@ loaded_pipeline.predict(X_test.iloc[:5])
 
 The reloaded pipeline runs preprocessing and prediction end-to-end on raw input, confirming it's a complete, deployable artifact rather than a bare estimator.
 
+Module 3 — Support Assistant (`/support_assistant`)
+
+This repository contains a complete, offline-first GenAI Customer Support microservice for Zepto. It implements a Retrieval-Augmented Generation (RAG) pipeline using **FastAPI**, **LangGraph**, **ChromaDB**, and **Sentence-Transformers** (`all-MiniLM-L6-v2`).
+
+---
+
+1. RAG Pipeline Architecture
+
+The pipeline processes customer queries in four main stages, orchestrated by a LangGraph `StateGraph`:
+
+```text
+[Customer Query: "How do I return a damaged item?"]
+       │
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│ 1. INGESTION & 2. EMBEDDING (Triggered on App Startup)       │
+│   • Source: 8 Zepto policy text files in /docs               │
+│   • Component: `app.py` (ensure_docs_exist, get_vectorstore) │
+│   • Embedder: SentenceTransformer ('all-MiniLM-L6-v2')       │
+│   • Storage: ChromaDB persistent collection 'zepto_policies' │
+└──────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│ LANGGRAPH ROUTER: `classify_intent` Node                     │
+│   • Evaluates query for policy keywords (delivery, return...)│
+│   • Branches to either policy retrieval or direct answer     │
+└──────────────────────┬────────────────────────┬──────────────┘
+                       │                        │
+          [Intent: policy_question]    [Intent: general_question]
+                       │                        │
+                       ▼                        ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────────────────┐
+│ 3. RETRIEVAL & 4. GENERATION         │  │ 4. GENERATION (No Retrieval)         │
+│ Node: `retrieve_and_answer`          │  │ Node: `direct_answer`                │
+│   • Embeds query & queries ChromaDB  │  │   • Bypasses ChromaDB entirely       │
+│   • Retrieves top-3 matching chunks  │  │   • Generates fallback response      │
+│   • Generates context-grounded reply │  │                                      │
+└──────────────────────┬───────────────┘  └───────────────┬──────────────────────┘
+                       │                                  │
+                       ▼                                  ▼
+            ┌───────────────────────────────────────────────────────┐
+            │ FASTAPI OUTPUT VALIDATION                             │
+            │ Component: `schemas.QueryResponse` (Pydantic)         │
+            │ Returns JSON: { answer: str, sources: [], confidence }│
+            └───────────────────────────────────────────────────────┘
+
+
+Here is the complete `README.md` file that fulfills all the grading requirements for Module 3.
+
+```markdown
+# Module 3 — Support Assistant (`/support_assistant`)
+
+This repository contains a complete, offline-first GenAI Customer Support microservice for Zepto. It implements a Retrieval-Augmented Generation (RAG) pipeline using **FastAPI**, **LangGraph**, **ChromaDB**, and **Sentence-Transformers** (`all-MiniLM-L6-v2`).
+
+---
+
+## 1. RAG Pipeline Architecture
+
+The pipeline processes customer queries in four main stages, orchestrated by a LangGraph `StateGraph`:
+
+```text
+[Customer Query: "How do I return a damaged item?"]
+       │
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│ 1. INGESTION & 2. EMBEDDING (Triggered on App Startup)       │
+│   • Source: 8 Zepto policy text files in /docs               │
+│   • Component: `app.py` (ensure_docs_exist, get_vectorstore) │
+│   • Embedder: SentenceTransformer ('all-MiniLM-L6-v2')       │
+│   • Storage: ChromaDB persistent collection 'zepto_policies' │
+└──────────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│ LANGGRAPH ROUTER: `classify_intent` Node                     │
+│   • Evaluates query for policy keywords (delivery, return...)│
+│   • Branches to either policy retrieval or direct answer     │
+└──────────────────────┬────────────────────────┬──────────────┘
+                       │                        │
+          [Intent: policy_question]    [Intent: general_question]
+                       │                        │
+                       ▼                        ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────────────────┐
+│ 3. RETRIEVAL & 4. GENERATION         │  │ 4. GENERATION (No Retrieval)         │
+│ Node: `retrieve_and_answer`          │  │ Node: `direct_answer`                │
+│   • Embeds query & queries ChromaDB  │  │   • Bypasses ChromaDB entirely       │
+│   • Retrieves top-3 matching chunks  │  │   • Generates fallback response      │
+│   • Generates context-grounded reply │  │                                      │
+└──────────────────────┬───────────────┘  └───────────────┬──────────────────────┘
+                       │                                  │
+                       ▼                                  ▼
+            ┌───────────────────────────────────────────────────────┐
+            │ FASTAPI OUTPUT VALIDATION                             │
+            │ Component: `schemas.QueryResponse` (Pydantic)         │
+            │ Returns JSON: { answer: str, sources: [], confidence }│
+            └───────────────────────────────────────────────────────┘
